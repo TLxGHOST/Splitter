@@ -1,0 +1,61 @@
+<h1>
+  <%= event.name %>
+</h1>
+
+<p class="join-code">
+  Join Code: <strong>
+    <%= event.join_code %>
+  </strong>
+</p>
+
+<h2>Members</h2>
+
+<ul class="member-list">
+
+  <% members.forEach(member=> { %>
+
+    <li>
+      <%= member.email %>
+    </li>
+
+    <% }) %>
+
+</ul>
+
+<h2>Expenses</h2>
+
+<div class="expense-list">
+
+  <% expenses.forEach(exp=> { %>
+
+    <div class="expense-card">
+
+      <p>
+        <%= exp.description %> - ₹<%= exp.amount %>
+      </p>
+
+      <form action="/expenses/delete/<%= exp.id %>" method="POST">
+
+        <button class="btn-danger">Delete</button>
+
+      </form>
+
+    </div>
+
+    <% }) %>
+
+</div>
+
+<h3>Add Expense</h3>
+
+<form action="/expenses/add" method="POST">
+
+  <input type="hidden" name="event_id" value="<%= event.id %>">
+
+  <input type="text" name="description" placeholder="Dinner">
+
+  <input type="number" name="amount" placeholder="Amount">
+
+  <button class="btn-primary">Add Expense</button>
+
+</form>
