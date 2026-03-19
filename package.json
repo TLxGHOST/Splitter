@@ -13,9 +13,14 @@
   "keywords": [],
   "author": "TLxGHOST",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/TLxGHOST/Splitter/issues"
   },
-  "homepage": "https://github.com/TLxGHOST/Splitter#readme"
+  "homepage": "https://github.com/TLxGHOST/Splitter#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
+  }
 }
