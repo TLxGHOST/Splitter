@@ -1,5 +1,5 @@
 import db from "../db";
-db.connect();
+// db.connect();
 
 async function createExpensesTable() {
     const expenses = await db.query(`CREATE TABLE expenses (

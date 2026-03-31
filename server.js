@@ -7,6 +7,7 @@ import passport from "passport";
 import { Strategy } from "passport-local";
 import pgSession from "connect-pg-simple";
 
+
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
@@ -14,7 +15,7 @@ const saltRound = Number(process.env.SALT_ROUND);
 
 const app = express();
 
-db.connect();
+// db.connect();
 
 const PgSession = pgSession(session);
 
