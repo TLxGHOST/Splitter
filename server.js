@@ -7,9 +7,12 @@ import passport from "passport";
 import { Strategy } from "passport-local";
 import pgSession from "connect-pg-simple";
 import createUniqueCode from "./utility/joincodes.js"
+import eventsRouter from "./routes/events.js";
+import staticRouter from "./routes/basePath.js";
 
 
 dotenv.config();
+
 
 const PORT = process.env.PORT || 3000;
 const saltRound = Number(process.env.SALT_ROUND);
@@ -54,45 +57,12 @@ app.use((req, res, next) => {
 
 /* ---------- EVENT LOADER MIDDLEWARE ---------- */
 
-async function eventFiller(req, res, next) {
-  try {
-    req.userID = req.user.id;
-    if (req.isAuthenticated()) {
 
-      const eventData = await db.query(
-        "SELECT * FROM events WHERE created_by=$1",
-        [req.user.id]
-      );
-
-      res.locals.events = eventData.rows || [];
-
-    }
-
-    next();
-
-  } catch (err) {
-    console.log(err);
-    next();
-  }
-}
 
 
 /* ---------- ROUTES ---------- */
 
-app.get("/", eventFiller, (req, res) => {
-  if (req.session.view) {
-    req.session.view += 1;
-  }
-  else {
-    req.session.view = 1;
-  }
-  console.log(req.session.view);
-  res.render("home");
-});
-
-app.get("/login", (req, res) => {
-  res.render("login");
-});
+app.use("/", staticRouter);
 
 app.post("/login",
   passport.authenticate("local", {
@@ -101,83 +71,14 @@ app.post("/login",
   })
 );
 
-app.get("/register", (req, res) => {
-  res.render("register");
-});
-
-app.get("/logout", (req, res, next) => {
-  req.logout((err) => {
-    if (err) {
-      return next(err);
-    }
-    res.redirect("/");
-  });
-});
 
 /* ---------- REGISTER USER ---------- */
 
-app.post("/register", async (req, res) => {
-
-  try {
-
-    const username = req.body.username;
-    const password = req.body.password;
-
-    const dbResult = await db.query(
-      "SELECT * FROM users WHERE email=$1",
-      [username]
-    );
-
-    if (dbResult.rows.length === 0) {
-
-      const hashedPass = await bcrypt.hash(password, saltRound);
-
-      await db.query(
-        "INSERT INTO users(email,password) VALUES($1,$2)",
-        [username, hashedPass]
-      );
-
-    }
-
-    res.redirect("/login");
-
-  } catch (err) {
-
-    console.log(err);
-    res.send("Registration error");
-
-  }
-
-});
 
 
 /* ---------- DASHBOARD ---------- */
 
-app.get("/dashboard", eventFiller, (req, res) => {
-  res.render("dashboard");
-});
-
-
-app.get("/events/create", eventFiller, (req, res) => {
-  res.render("create-event");
-});
-
-
-app.post("/events/create", async (req, res) => {
-
-  if (!req.isAuthenticated()) {
-    return res.redirect("/login");
-  }
-
-  const joinCode = await createUniqueCode();
-
-  await db.query(
-    "INSERT INTO events (name, join_code, created_by) VALUES ($1,$2,$3)",
-    [req.body.name, joinCode, req.user.id]
-  );
-
-  res.redirect("/dashboard");
-});
+app.use("/events", eventsRouter);
 
 // opening an event when event exists
 app.get("/events/:id", eventFiller, async (req, res) => {
