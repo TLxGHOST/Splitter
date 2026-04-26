@@ -9,6 +9,8 @@ import pgSession from "connect-pg-simple";
 import createUniqueCode from "./utility/joincodes.js"
 import eventsRouter from "./routes/events.js";
 import staticRouter from "./routes/basePath.js";
+import { eventFiller } from "./middleware/eventLoader.js";
+import GoogleStrategy from "passport-google-oauth2";
 
 
 dotenv.config();
@@ -67,6 +69,17 @@ app.use("/", staticRouter);
 app.post("/login",
   passport.authenticate("local", {
     successRedirect: "/",
+    failureRedirect: "/login"
+  })
+);
+
+app.get("/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+app.get("/auth/google/callback",
+  passport.authenticate("google", {
+    successRedirect: "/dashboard",
     failureRedirect: "/login"
   })
 );
@@ -166,6 +179,38 @@ passport.use("local", new Strategy(async (username, password, cb) => {
 
 }));
 
+/*----------- pAssport Google authentication ----------------- */
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: "/auth/google/callback"
+},
+  async (accessToken, refreshToken, profile, done) => {
+
+    try {
+
+      // check if user already exists
+      const user = await db.query(
+        "SELECT * FROM users WHERE google_id = $1",
+        [profile.id]
+      );
+
+      if (user.rows.length > 0) {
+        return done(null, user.rows[0]);
+      }
+
+      // create new user
+      const newUser = await db.query(
+        "INSERT INTO users (email, google_id) VALUES ($1,$2) RETURNING *",
+        [profile.emails[0].value, profile.id]
+      );
+
+      return done(null, newUser.rows[0]);
+
+    } catch (err) {
+      return done(err, null);
+    }
+  }));
 
 /* ---------- SESSION SERIALIZATION ---------- */
 
