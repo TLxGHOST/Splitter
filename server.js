@@ -68,7 +68,7 @@ app.use("/", staticRouter);
 
 app.post("/login",
   passport.authenticate("local", {
-    successRedirect: "/",
+    successRedirect: "/dashboard",
     failureRedirect: "/login"
   })
 );

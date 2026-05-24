@@ -1,5 +1,5 @@
 import db from "../db";
-db.connect();
+// db.connect();
 
 async function createEventMembersTable() {
   const event_members = await db.query(`CREATE TABLE event_members (

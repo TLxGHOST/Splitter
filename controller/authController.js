@@ -1,6 +1,8 @@
 import db from "../db.js";
 import bcrypt from "bcrypt";
 
+const saltRound = Number(process.env.SALT_ROUND);
+
 async function handleRegister(req, res) {
 
   try {

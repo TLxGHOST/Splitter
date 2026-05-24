@@ -1,5 +1,5 @@
 import express from "express";
-import { handleCreateEvent } from "../controller/eventController.js";
+import { handleCreateEvent, handleJoinEvent } from "../controller/eventController.js";
 import { eventFiller } from "../middleware/eventLoader.js";
 
 const router = express.Router();
@@ -9,5 +9,11 @@ router.get("/create", eventFiller, (req, res) => {
 });
 
 router.post("/create", handleCreateEvent);
+
+router.get("/join", eventFiller, (req, res) => {
+  res.render("join-event");
+});
+
+router.post("/join", handleJoinEvent);
 
 export default router;
