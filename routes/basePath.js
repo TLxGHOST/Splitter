@@ -1,9 +1,9 @@
 import express from "express";
-import { eventFiller } from "../middleware/eventLoader.js";
+import { eventFiller, joinedEventFiller } from "../middleware/eventLoader.js";
 import { handleRegister } from "../controller/authController.js";
 const router=express.Router();
 
-router.get("/", eventFiller, (req, res) => {
+router.get("/", eventFiller, joinedEventFiller, (req, res) => {
   if (req.session.view) {
     req.session.view += 1;
   }
@@ -31,7 +31,7 @@ router.get("/logout", (req, res, next) => {
   });
 });
 
-router.get("/dashboard", eventFiller, (req, res) => {
+router.get("/dashboard", eventFiller, joinedEventFiller, (req, res) => {
   res.render("dashboard");
 });
 
