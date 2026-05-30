@@ -107,4 +107,4 @@ const handleViewEvent = async (req, res) => {
   }
 }
 
-export {handleCreateEvent, handleJoinEvent, handleViewEvent};
+export { handleCreateEvent, handleJoinEvent, handleViewEvent };
