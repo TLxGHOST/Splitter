@@ -1,23 +1,67 @@
 <%- include("partials/header") %>
 
   <div class="page-header">
-    <h1>Your Events</h1>
+    <div>
+      <h1>Dashboard</h1>
+      <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+        Your expenses across all events
+      </p>
+    </div>
     <div class="actions">
       <a href="/events/create" class="btn btn-primary">+ Create Event</a>
       <a href="/events/join" class="btn btn-secondary">Join Event</a>
     </div>
   </div>
 
-  <!-- Joined Events -->
-  <p class="section-title">Joined Events</p>
+  <% const overall=typeof overallBalance !=='undefined' ? overallBalance : 0; const overallPositive=overall>= 0;
+    %>
 
-  <% if (joinedEvents.length===0) { %>
-    <div class="empty-state">
-      You haven't joined any events yet. Ask a friend for their join code.
+    <div class="balance-banner <%= overallPositive ? 'balance-positive' : 'balance-negative' %>">
+      <div>
+        <div class="balance-banner-label">Overall Balance</div>
+        <div class="balance-banner-amount">
+          <%= overallPositive ? '+' : '' %>₹<%= Math.abs(overall).toFixed(2) %>
+        </div>
+      </div>
+      <div class="balance-banner-hint">
+        <% if (overall> 0.01) { %>
+          You are owed money across all events
+          <% } else if (overall < -0.01) { %>
+            You owe money across all events
+            <% } else { %>
+              You're all settled up ✓
+              <% } %>
+      </div>
     </div>
-    <% } else { %>
+
+    <% if (typeof eventBalances !=='undefined' && eventBalances.length> 0) { %>
+
+      <div class="charts-grid">
+        <div class="panel">
+          <h3>Balance per Event</h3>
+          <div class="chart-wrap">
+            <canvas id="balanceChart"></canvas>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Your Contribution</h3>
+          <div class="chart-wrap chart-wrap-sm">
+            <canvas id="contributionChart"></canvas>
+          </div>
+          <div class="chart-legend">
+            <span class="legend-dot" style="background: var(--success)"></span>
+            <span>You are owed</span>
+            <span class="legend-dot" style="background: var(--danger); margin-left: 16px;"></span>
+            <span>You owe</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="section-title">All Events</p>
       <div class="event-grid">
-        <% joinedEvents.forEach(event=> { %>
+        <% eventBalances.forEach(event=> {
+          const isPositive = event.balance >= 0;
+          %>
           <div class="event-card">
             <h3>
               <%= event.name %>
@@ -25,33 +69,99 @@
             <span class="join-code-pill">
               <%= event.join_code %>
             </span>
+            <div class="event-balance <%= isPositive ? 'event-balance-positive' : 'event-balance-negative' %>">
+              <span class="event-balance-label">
+                <%= isPositive ? 'You are owed' : 'You owe' %>
+              </span>
+              <span class="event-balance-amount">
+                <%= isPositive ? '+' : '' %>₹<%= Math.abs(event.balance).toFixed(2) %>
+              </span>
+            </div>
             <a href="/events/<%= event.id %>" class="open-link">Open event →</a>
           </div>
           <% }) %>
       </div>
-      <% } %>
-
-        <!-- Created Events -->
-        <p class="section-title">Created by You</p>
-
-        <% if (events.length===0) { %>
-          <div class="empty-state">
-            No events yet. <a href="/events/create">Create your first one →</a>
+      <% } else { %>
+        <div class="empty-state">
+          No events yet. <a href="/events/create">Create your first one →</a>
+        </div>
+        <% } %>
+          <div id="chart-data"
+            data-balances="<%= JSON.stringify(typeof eventBalances !== 'undefined' ? eventBalances : []) %>"
+            style="display:none">
           </div>
-          <% } else { %>
-            <div class="event-grid">
-              <% events.forEach(event=> { %>
-                <div class="event-card">
-                  <h3>
-                    <%= event.name %>
-                  </h3>
-                  <span class="join-code-pill">
-                    <%= event.join_code %>
-                  </span>
-                  <a href="/events/<%= event.id %>" class="open-link">Open event →</a>
-                </div>
-                <% }) %>
-            </div>
-            <% } %>
+          <!-- Single script block at the very bottom -->
+          <script>
+            const eventBalances = JSON.parse(document.getElementById('chart-data').dataset.balances);
 
-              <%- include("partials/footer") %>
+            if (eventBalances.length > 0) {
+
+              const labels = eventBalances.map(e => e.name);
+              const balances = eventBalances.map(e => parseFloat(parseFloat(e.balance).toFixed(2)));
+              const barColors = balances.map(b => b >= 0 ? '#3fb950' : '#f85149');
+
+              new Chart(document.getElementById('balanceChart'), {
+                type: 'bar',
+                data: {
+                  labels,
+                  datasets: [{
+                    label: 'Your Balance (₹)',
+                    data: balances,
+                    backgroundColor: barColors,
+                    borderRadius: 6,
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: ctx => {
+                          const v = ctx.parsed.y;
+                          return v >= 0 ? ` You are owed ₹${v}` : ` You owe ₹${Math.abs(v)}`;
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    x: {
+                      ticks: { color: '#7d8590' },
+                      grid: { color: '#30363d' }
+                    },
+                    y: {
+                      ticks: {
+                        color: '#7d8590',
+                        callback: v => '₹' + v
+                      },
+                      grid: { color: '#30363d' }
+                    }
+                  }
+                }
+              });
+
+              const totalOwed = balances.reduce((sum, b) => sum + (b >= 0 ? b : 0), 0);
+              const totalOwe = balances.reduce((sum, b) => sum + (b < 0 ? Math.abs(b) : 0), 0); new
+                Chart(document.getElementById('contributionChart'), {
+                  type: 'doughnut', data: {
+                    labels: ['You are owed', 'You owe'], datasets: [{
+                      data: [parseFloat(totalOwed.toFixed(2)), parseFloat(totalOwe.toFixed(2))
+                      ], backgroundColor: ['#3fb950', '#f85149'], borderColor: ['#2ea043', '#da3633'], borderWidth: 1,
+                      hoverOffset: 6
+                    }]
+                  }, options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: {
+                      legend: { display: false }, tooltip: {
+                        callbacks: {
+                          label: ctx => ` ₹${ctx.parsed}`
+                        }
+                      }
+                    }
+                  }
+                });
+
+            }
+          </script>
+
+          <%- include("partials/footer") %>

@@ -93,15 +93,35 @@ const handleViewEvent = async (req, res) => {
       [eventID]
     );
 
+    const memberSpendingResult = await db.query(
+      `SELECT paid_by, SUM(amount) AS total
+   FROM expenses
+   WHERE event_id = $1
+   GROUP BY paid_by`,
+      [eventID]
+    );
+
+    const spendingMap = {};
+    memberSpendingResult.rows.forEach(row => {
+      spendingMap[row.paid_by] = parseFloat(row.total) || 0;
+    });
+    const membersWithSpending = membersResult.rows.map(m => ({
+      ...m,
+      totalSpent: spendingMap[m.id] || 0
+    }));
+
     res.render("event", {
       event: eventResult.rows[0],
-      members: membersResult.rows,
-      expenses: expensesResult.rows
+      members: membersWithSpending,   // changed
+      expenses: expensesResult.rows,
+      perHeadAmount: res.locals.perHeadAmount
     });
   } catch (err) {
     console.log(err);
     res.status(500).send("Error loading event");
   }
 }
+
+
 
 export { handleCreateEvent, handleJoinEvent, handleViewEvent };

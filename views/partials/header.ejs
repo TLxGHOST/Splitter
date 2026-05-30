@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Splitter</title>
   <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -15,8 +16,6 @@
     <div class="nav-links">
       <% if (isAuth) { %>
         <a href="/dashboard">Dashboard</a>
-        <a href="/events/create">Create Event</a>
-        <a href="/events/join">Join Event</a>
         <a href="/logout">Logout</a>
         <% } else { %>
           <a href="/login">Login</a>

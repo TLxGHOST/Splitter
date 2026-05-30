@@ -20,7 +20,12 @@
             <div class="member-avatar">
               <%= member.email[0].toUpperCase() %>
             </div>
-            <%= member.email %>
+            <div class="member-info">
+              <span class="member-email">
+                <%= member.email %>
+              </span>
+              <span class="member-spent">₹<%= member.totalSpent.toFixed(2) %> paid</span>
+            </div>
           </li>
           <% }) %>
       </ul>
@@ -53,7 +58,6 @@
           </div>
           <% } %>
 
-            <!-- Add Expense -->
             <form action="/expenses/add/<%= event.id %>" method="POST" class="add-expense-form">
               <div class="form-group">
                 <label>Description</label>
@@ -65,12 +69,47 @@
               </div>
               <button type="submit" class="btn btn-primary" style="margin-bottom:0; align-self: flex-end;">Add</button>
             </form>
-
     </div>
+
+    <!-- Balance Panel -->
     <div class="panel">
-      <span class="join-code-pil">
-        <strong><b>Your balance: ₹<%= perHeadAmount.toFixed(2) %></b></strong>
-      </span>
+      <h3>Split Summary</h3>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; color: var(--text-muted);">Total expenses</span>
+          <span style="font-family: var(--font-mono); font-weight: 600;">
+            ₹<%= expenses.reduce((sum, e)=> sum + Number(e.amount), 0).toFixed(2) %>
+          </span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; color: var(--text-muted);">Members</span>
+          <span style="font-family: var(--font-mono); font-weight: 600;">
+            <%= members.length %>
+          </span>
+        </div>
+
+        <div
+          style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; font-weight: 600;">Your balance</span>
+          <% const balanceClass=perHeadAmount>= 0 ? 'balance-positive-text' : 'balance-negative-text' %>
+            <span class="balance-figure <%= balanceClass %>">
+              <%= perHeadAmount>= 0 ? '+' : '' %>₹<%= Math.abs(perHeadAmount).toFixed(2) %>
+            </span>
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); text-align: right;">
+          <% if (perHeadAmount> 0.01) { %>
+            Others owe you
+            <% } else if (perHeadAmount < -0.01) { %>
+              You owe others
+              <% } else { %>
+                You're settled up ✓
+                <% } %>
+        </div>
+
+      </div>
     </div>
 
   </div>
