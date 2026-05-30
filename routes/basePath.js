@@ -15,8 +15,12 @@ router.get("/", eventFiller, joinedEventFiller, (req, res) => {
   res.render("home");
 });
 
+// router.get("/login", (req, res) => {
+//   res.render("login");
+// });
+
 router.get("/login", (req, res) => {
-  res.render("login");
+  res.render("login", { errorMessage: req.query.error === '1' });
 });
 
 router.get("/register", (req, res) => {

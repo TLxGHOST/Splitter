@@ -72,7 +72,7 @@ app.use("/", staticRouter);
 app.post("/login",
   passport.authenticate("local", {
     successRedirect: "/",
-    failureRedirect: "/login"
+    failureRedirect: "/login?error=1"
   })
 );
 
@@ -83,7 +83,7 @@ app.get("/auth/google",
 app.get("/auth/google/callback",
   passport.authenticate("google", {
     successRedirect: "/",
-    failureRedirect: "/login"
+    failureRedirect: "/login?error=1"
   })
 );
 

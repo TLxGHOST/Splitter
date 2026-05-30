@@ -785,3 +785,13 @@ input::placeholder {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+.alert-error {
+  background: var(--danger-dim);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 16px;
+}

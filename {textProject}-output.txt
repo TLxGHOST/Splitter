@@ -5,7 +5,7 @@ PROJECT EXPORT FOR LLMs
 PROJECT INFORMATION:
 --------------------------------------------------
 Project Name: Splitter
-Generated On: 2026-05-30 20:40:34 (Asia/Calcutta / GMT+06:30)
+Generated On: 2026-05-30 21:01:30 (Asia/Calcutta / GMT+06:30)
 Total Files Processed: 32
 Export Tool: Easy Whole Project to Single Text File for LLMs v1.1.0
 Tool Author: Jota / José Guilherme Pandolfi
@@ -26,7 +26,7 @@ PROJECT STRUCTURE
 │   └── 📄 passport.js (2.61 KB)
 ├── 📁 controller/
 │   ├── 📄 authController.js (759 B)
-│   ├── 📄 eventController.js (4.61 KB)
+│   ├── 📄 eventController.js (4.83 KB)
 │   ├── 📄 expenseController.js (1.36 KB)
 │   └── 📄 paymentController.js (2.56 KB)
 ├── 📁 middleware/
@@ -38,11 +38,11 @@ PROJECT STRUCTURE
 │   └── 📄 users.js (314 B)
 ├── 📁 public/
 │   ├── 📁 css/
-│   │   └── 📄 style.css (13.81 KB)
+│   │   └── 📄 style.css (14.02 KB)
 │   └── 📁 images/
 ├── 📁 routes/
-│   ├── 📄 basePath.js (1.17 KB)
-│   ├── 📄 events.js (775 B)
+│   ├── 📄 basePath.js (1.28 KB)
+│   ├── 📄 events.js (844 B)
 │   ├── 📄 expenses.js (309 B)
 │   └── 📄 payments.js (284 B)
 ├── 📁 utility/
@@ -57,14 +57,14 @@ PROJECT STRUCTURE
 │   ├── 📄 home.ejs (701 B)
 │   ├── 📄 join-event.ejs (746 B)
 │   ├── 📄 layout.ejs (536 B)
-│   ├── 📄 login.ejs (1.97 KB)
+│   ├── 📄 login.ejs (2.26 KB)
 │   └── 📄 register.ejs (950 B)
 ├── 📄 db.js (532 B)
 ├── 📄 dbOnline.txt (8.03 KB)
 ├── 📄 package-lock.json (71.79 KB)
 ├── 📄 package.json (1.19 KB)
 ├── 📄 readme.md (1.09 KB)
-└── 📄 server.js (2.27 KB)
+└── 📄 server.js (2.29 KB)
 
 ================================================================================
 PROJECT STATISTICS
@@ -73,7 +73,7 @@ Total Files: 32
 Total Directories: 11
 Text Files: 22
 Binary Files: 10
-Total Size: 142.58 KB
+Total Size: 143.52 KB
 
 FILE TYPES DISTRIBUTION:
 ------------------------------
@@ -268,15 +268,15 @@ FILE: controller/eventController.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 4.61 KB
+Size: 4.83 KB
 Extension: .js
 Language: javascript
 Location: controller/eventController.js
 Relative Path: controller
-Created: 2026-05-30 12:17:41 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 20:14:54 (Asia/Calcutta / GMT+06:30)
-MD5: 2af7ba19d82c412c44a949fe449e69eb
-SHA256: 0aee415a4be05a05d31c7601f56ecf2b2b8acff379e86e3562d061764a12ee83
+Created: 2026-05-30 20:55:46 (Asia/Calcutta / GMT+06:30)
+Modified: 2026-05-30 20:55:46 (Asia/Calcutta / GMT+06:30)
+MD5: 62a2add1b0f61030452207d35d5f90dc
+SHA256: 7461c57a286a594bc8049c6ad0dde6a21f95760ba36db7731b87db48155b4325
 Encoding: ASCII
 
 FILE CONTENT:
@@ -285,33 +285,48 @@ import db from "../db.js";
 import createUniqueCode from "../utility/joincodes.js";
 
 async function handleCreateEvent(req, res) {
+
   if (!req.isAuthenticated()) {
     return res.redirect("/login");
   }
 
   const joinCode = await createUniqueCode();
 
-  const eventResult = await db.query(
-    "INSERT INTO events (name, join_code, created_by) VALUES ($1,$2,$3) RETURNING id",
+  await db.query(
+    "INSERT INTO events (name, join_code, created_by) VALUES ($1,$2,$3)",
     [req.body.name, joinCode, req.user.id]
   );
 
-  const eventID = eventResult.rows[0].id;
 
-  // add creator as member so they appear in member list and counts
-  await db.query(
-    "INSERT INTO event_members (event_id, user_id) VALUES ($1,$2)",
-    [eventID, req.user.id]
-  );
+
+  res.redirect("/dashboard");
+}
+
+async function handleDeleteEvent(req, res) {
+
+  if (!req.isAuthenticated()) {
+    return res.redirect("/login");
+  }
+  const eventID = req.params.id;
+
+  try {
+    await db.query(
+      "DELETE FROM events WHERE id=$1",
+      [eventID]
+    );
+  } catch (err) {
+    console.error("Error deleting event:", err);
+    return res.status(500).send("Error deleting event");
+  }
 
   res.redirect("/dashboard");
 }
 
 async function handleJoinEvent(req, res) {
+
   if (!req.isAuthenticated()) {
     return res.redirect("/login");
   }
-
   const joinCode = req.body.code;
 
   const eventResult = await db.query(
@@ -323,6 +338,7 @@ async function handleJoinEvent(req, res) {
     return res.status(404).send("Event not found");
   }
 
+  // Check if user is already a member
   const memberResult = await db.query(
     "SELECT * FROM event_members WHERE event_id=$1 AND user_id=$2",
     [eventResult.rows[0].id, req.user.id]
@@ -332,6 +348,7 @@ async function handleJoinEvent(req, res) {
     return res.status(400).send("You are already a member of this event");
   }
 
+  // Add user to event
   await db.query(
     "INSERT INTO event_members (event_id, user_id) VALUES ($1,$2)",
     [eventResult.rows[0].id, req.user.id]
@@ -377,7 +394,7 @@ const handleViewEvent = async (req, res) => {
       [eventID]
     );
 
-    // per member spending — key as integer
+    // per member spending
     const memberSpendingResult = await db.query(
       `SELECT paid_by, SUM(amount) AS total
        FROM expenses
@@ -388,10 +405,10 @@ const handleViewEvent = async (req, res) => {
 
     const spendingMap = {};
     memberSpendingResult.rows.forEach(row => {
-      spendingMap[parseInt(row.paid_by)] = parseFloat(row.total) || 0;
+      spendingMap[row.paid_by] = parseFloat(row.total) || 0;
     });
 
-    // settlements paid by current user to others — key as integer
+    // already settled payments FROM current user TO others in this event
     const settlementsResult = await db.query(
       `SELECT payee_id, SUM(amount) AS total
        FROM settlements
@@ -402,7 +419,7 @@ const handleViewEvent = async (req, res) => {
 
     const settledMap = {};
     settlementsResult.rows.forEach(row => {
-      settledMap[parseInt(row.payee_id)] = parseFloat(row.total) || 0;
+      settledMap[row.payee_id] = parseFloat(row.total) || 0;
     });
 
     const totalExpenses = expensesResult.rows
@@ -411,20 +428,17 @@ const handleViewEvent = async (req, res) => {
     const memberCount = membersResult.rows.length;
     const fairShare = memberCount > 0 ? totalExpenses / memberCount : 0;
 
-    const myPaid = spendingMap[parseInt(req.user.id)] || 0;
-    const myDebt = Math.max(0, fairShare - myPaid);
     const membersWithData = membersResult.rows.map(m => {
-      const memberID = parseInt(m.id);
-      const paid = spendingMap[memberID] || 0;
-
-      const balance = fairShare - paid;
-      const alreadySettled = settledMap[memberID] || 0;
+      const paid = spendingMap[m.id] || 0;
+      const balance = paid - fairShare;  // positive = others owe them, negative = they owe others
+      const alreadySettled = settledMap[m.id] || 0;
 
       let owedByMe = 0;
-      if (memberID !== parseInt(req.user.id) && balance > 0.01) {
-        // they overpaid — I owe them a portion
+      if (m.id !== req.user.id && balance > 0.01) {
+        // this member paid more than their share
+        // current user owes them their fair portion of that overpayment
+        const myDebt = fairShare - (spendingMap[req.user.id] || 0);
         owedByMe = Math.max(0, Math.min(myDebt, balance) - alreadySettled);
-
       }
 
       return {
@@ -451,7 +465,8 @@ const handleViewEvent = async (req, res) => {
   }
 };
 
-export { handleCreateEvent, handleJoinEvent, handleViewEvent };
+
+export { handleCreateEvent, handleJoinEvent, handleViewEvent, handleDeleteEvent };
 ================================================================================
 
 
@@ -1037,15 +1052,15 @@ FILE: public/css/style.css
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 13.81 KB
+Size: 14.02 KB
 Extension: .css
 Language: css
 Location: public/css/style.css
 Relative Path: public/css
 Created: 2026-05-30 12:17:31 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 17:49:22 (Asia/Calcutta / GMT+06:30)
-MD5: 0681f6660dc4d8aa948632945d1743b0
-SHA256: e3760355bfb6f0f40e97d11af2f47b17b05ca7c58ecf6618b7354783d3884551
+Modified: 2026-05-30 21:01:29 (Asia/Calcutta / GMT+06:30)
+MD5: 679cca8c93f32ded59e1b45f8c9b13bd
+SHA256: 3b216d82795f35ed3b1db177398475df927e80e7a3fb310fff893741aaf7ded2
 Encoding: UTF-8
 
 FILE CONTENT:
@@ -1837,6 +1852,16 @@ input::placeholder {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+.alert-error {
+  background: var(--danger-dim);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
 ================================================================================
 
 
@@ -1846,15 +1871,15 @@ FILE: routes/basePath.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 1.17 KB
+Size: 1.28 KB
 Extension: .js
 Language: javascript
 Location: routes/basePath.js
 Relative Path: routes
 Created: 2026-05-30 12:17:31 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 12:49:57 (Asia/Calcutta / GMT+06:30)
-MD5: 3000891dd71cf73dcd90597ed2325a8f
-SHA256: 4916188de3646a7ee975c4825f82f5c1f15c446375c9eecac03c61cdbe0c2e7e
+Modified: 2026-05-30 21:01:10 (Asia/Calcutta / GMT+06:30)
+MD5: adb12f80baad4d5fe805874c38a0a73e
+SHA256: 3cfd4e25f26ebbd38c5d463064e150c21168f267a19ade08d57839ce9bc5d446
 Encoding: ASCII
 
 FILE CONTENT:
@@ -1876,8 +1901,12 @@ router.get("/", eventFiller, joinedEventFiller, (req, res) => {
   res.render("home");
 });
 
+// router.get("/login", (req, res) => {
+//   res.render("login");
+// });
+
 router.get("/login", (req, res) => {
-  res.render("login");
+  res.render("login", { errorMessage: req.query.error === '1' });
 });
 
 router.get("/register", (req, res) => {
@@ -1915,21 +1944,21 @@ FILE: routes/events.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 775 B
+Size: 844 B
 Extension: .js
 Language: javascript
 Location: routes/events.js
 Relative Path: routes
-Created: 2026-05-30 12:17:31 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 19:35:36 (Asia/Calcutta / GMT+06:30)
-MD5: 80c87cd2425f7b2a9955264f9a64d9fb
-SHA256: 0de3d75e8246c1271deceba210b8cfdb509a7763aaef9ce3d478dd8b427bea52
+Created: 2026-05-30 20:55:46 (Asia/Calcutta / GMT+06:30)
+Modified: 2026-05-30 20:55:46 (Asia/Calcutta / GMT+06:30)
+MD5: a4aaf5e4adb2586dc03bcc332b3b8265
+SHA256: 873f85a3ba3e417c7cd7e9610508242875da5e13056a15cebb0d304fb37d36df
 Encoding: ASCII
 
 FILE CONTENT:
 ----------------------------------------
 import express from "express";
-import { handleCreateEvent, handleJoinEvent, handleViewEvent } from "../controller/eventController.js";
+import { handleCreateEvent, handleJoinEvent, handleViewEvent, handleDeleteEvent } from "../controller/eventController.js";
 import { eventFiller, perHeadFiller } from "../middleware/eventLoader.js";
 
 const router = express.Router({ mergeParams: true });
@@ -1950,6 +1979,8 @@ router.get("/join", (req, res) => {
 });
 
 router.get("/:id", perHeadFiller, handleViewEvent);
+
+router.post("/delete/:id", handleDeleteEvent);
 
 router.post("/join", handleJoinEvent);
 
@@ -4522,15 +4553,15 @@ FILE: server.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 2.27 KB
+Size: 2.29 KB
 Extension: .js
 Language: javascript
 Location: server.js
 Relative Path: root
 Created: 2026-05-30 12:17:31 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 17:54:32 (Asia/Calcutta / GMT+06:30)
-MD5: b1436684cccbf990990d33a7811f8e41
-SHA256: ede33768eec4908da4d6909718f5f44190cc6ed8ba9f5559df7f2ebabdf9ab32
+Modified: 2026-05-30 20:59:57 (Asia/Calcutta / GMT+06:30)
+MD5: a8d97312f79f9fddb2d94aa3f41f96b6
+SHA256: acc1f18d70ce3007ab43a20543ea4c2181f44c62b84a8c1c2918d4567c8f477e
 Encoding: ASCII
 
 FILE CONTENT:
@@ -4609,7 +4640,7 @@ app.use("/", staticRouter);
 app.post("/login",
   passport.authenticate("local", {
     successRedirect: "/",
-    failureRedirect: "/login"
+    failureRedirect: "/login?error=1"
   })
 );
 
@@ -4620,7 +4651,7 @@ app.get("/auth/google",
 app.get("/auth/google/callback",
   passport.authenticate("google", {
     successRedirect: "/",
-    failureRedirect: "/login"
+    failureRedirect: "/login?error=1"
   })
 );
 
