@@ -5,7 +5,7 @@ PROJECT EXPORT FOR LLMs
 PROJECT INFORMATION:
 --------------------------------------------------
 Project Name: Splitter
-Generated On: 2026-05-30 06:16:32 (Asia/Calcutta / GMT+06:30)
+Generated On: 2026-05-30 12:14:13 (Asia/Calcutta / GMT+06:30)
 Total Files Processed: 30
 Export Tool: Easy Whole Project to Single Text File for LLMs v1.1.0
 Tool Author: Jota / José Guilherme Pandolfi
@@ -26,10 +26,10 @@ PROJECT STRUCTURE
 │   └── 📄 passport.js (2.61 KB)
 ├── 📁 controller/
 │   ├── 📄 authController.js (759 B)
-│   ├── 📄 eventController.js (2.59 KB)
+│   ├── 📄 eventController.js (2.75 KB)
 │   └── 📄 expenseController.js (1.36 KB)
 ├── 📁 middleware/
-│   └── 📄 eventLoader.js (1.16 KB)
+│   └── 📄 eventLoader.js (2.66 KB)
 ├── 📁 model/
 │   ├── 📄 event_members.js (384 B)
 │   ├── 📄 events.js (369 B)
@@ -41,7 +41,7 @@ PROJECT STRUCTURE
 │   └── 📁 images/
 ├── 📁 routes/
 │   ├── 📄 basePath.js (1.04 KB)
-│   ├── 📄 events.js (575 B)
+│   ├── 📄 events.js (592 B)
 │   └── 📄 expenses.js (309 B)
 ├── 📁 utility/
 │   └── 📄 joincodes.js (612 B)
@@ -51,7 +51,7 @@ PROJECT STRUCTURE
 │   │   └── 📄 header.ejs (755 B)
 │   ├── 📄 create-event.ejs (645 B)
 │   ├── 📄 dashboard.ejs (1.79 KB)
-│   ├── 📄 event.ejs (2.35 KB)
+│   ├── 📄 event.ejs (2.52 KB)
 │   ├── 📄 home.ejs (701 B)
 │   ├── 📄 join-event.ejs (746 B)
 │   ├── 📄 layout.ejs (536 B)
@@ -71,7 +71,7 @@ Total Files: 30
 Total Directories: 11
 Text Files: 20
 Binary Files: 10
-Total Size: 116.87 KB
+Total Size: 118.71 KB
 
 FILE TYPES DISTRIBUTION:
 ------------------------------
@@ -266,15 +266,15 @@ FILE: controller/eventController.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 2.59 KB
+Size: 2.75 KB
 Extension: .js
 Language: javascript
 Location: controller/eventController.js
 Relative Path: controller
-Created: 2026-05-30 02:35:14 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 02:35:14 (Asia/Calcutta / GMT+06:30)
-MD5: 690fa44b897bdcd46028cd33e9669b1a
-SHA256: f0847067f195bc4b9fed7ef72441aa7f4feb31a8ce4977af09f36d3011984723
+Created: 2026-05-30 12:12:48 (Asia/Calcutta / GMT+06:30)
+Modified: 2026-05-30 12:12:48 (Asia/Calcutta / GMT+06:30)
+MD5: 0e53670fc02fb63a8e5809048760a241
+SHA256: 6af750839af30554e7a5d16c7899711df5a9ae2a0939214720acfc8d696665f2
 Encoding: ASCII
 
 FILE CONTENT:
@@ -293,6 +293,11 @@ async function handleCreateEvent(req, res){
   await db.query(
     "INSERT INTO events (name, join_code, created_by) VALUES ($1,$2,$3)",
     [req.body.name, joinCode, req.user.id]
+  );
+
+  await db.query(
+    "INSERT INTO event_members (event_id, user_id) VALUES ((SELECT id FROM events WHERE join_code=$1), $2)",
+    [joinCode, req.user.id]
   );
 
   res.redirect("/dashboard");
@@ -465,15 +470,15 @@ FILE: middleware/eventLoader.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 1.16 KB
+Size: 2.66 KB
 Extension: .js
 Language: javascript
 Location: middleware/eventLoader.js
 Relative Path: middleware
-Created: 2026-04-21 01:57:23 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-25 07:50:26 (Asia/Calcutta / GMT+06:30)
-MD5: 531d011b5c5cca99e4c706927e0e0cc6
-SHA256: f98f9515a32a2d9756c39f34e2e393ebad8868c0be63cc8765b3756df0fc26c9
+Created: 2026-05-30 12:12:48 (Asia/Calcutta / GMT+06:30)
+Modified: 2026-05-30 12:14:13 (Asia/Calcutta / GMT+06:30)
+MD5: 2ba5649c2a2ae6447b14cb00a3b10b7f
+SHA256: a9c7f9a91e2e581803d3e0bb906a0160a5c71defd209018d0a251233adc0d4ec
 Encoding: ASCII
 
 FILE CONTENT:
@@ -530,7 +535,60 @@ async function joinedEventFiller(req, res, next) {
   }
 }
 
-export { eventFiller, joinedEventFiller }; 
+
+async function perHeadFiller(req, res, next) {
+  try {
+    if (!req.isAuthenticated()) {
+      return res.redirect("/login");
+    }
+
+    const eventID = req.params.id;
+    if (!eventID) {
+      res.locals.perHeadAmount = 0;
+      return next();
+    }
+
+    const userID = req.user?.id;
+    if (!userID) {
+      res.locals.perHeadAmount = 0;
+      return next();
+    }
+
+    const totalPaidByMeRes = await db.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE event_id = $1 AND paid_by = $2`,
+      [eventID, userID]
+    );
+    const myTotalPaid = parseFloat(totalPaidByMeRes.rows[0].total) || 0;
+
+    const totalPaidByOthersRes = await db.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE event_id = $1 AND paid_by != $2`,
+      [eventID, userID]
+    );
+    const othersTotalPaid = parseFloat(totalPaidByOthersRes.rows[0].total) || 0;
+
+    const membersRes = await db.query(
+      `SELECT COUNT(*) AS count FROM event_members WHERE event_id = $1`,
+      [eventID]
+    );
+    const membersCount = (parseInt(membersRes.rows[0].count, 10) || 0);
+
+    const totalEventCost = myTotalPaid + othersTotalPaid;
+    const myFairShare = membersCount > 0 ? totalEventCost / membersCount : 0;
+
+    res.locals.perHeadAmount = myTotalPaid - myFairShare;
+
+    next();
+  } catch (err) {
+    console.error("Error in perHeadFiller middleware:", err);
+    res.locals.perHeadAmount = 0;
+    next(err);
+  }
+}
+
+export { eventFiller, joinedEventFiller, perHeadFiller };
+
+//blank comment added
+
 ================================================================================
 
 
@@ -1350,22 +1408,22 @@ FILE: routes/events.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 575 B
+Size: 592 B
 Extension: .js
 Language: javascript
 Location: routes/events.js
 Relative Path: routes
-Created: 2026-05-30 02:35:14 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 02:35:14 (Asia/Calcutta / GMT+06:30)
-MD5: 5f164ea283fdfb7fc881272f3aa6a2d4
-SHA256: 35f6dfd1ad2eb2eeb00a4ac4059a563158fcd28a8f590c2926eecd685cb5f13a
+Created: 2026-05-30 11:54:46 (Asia/Calcutta / GMT+06:30)
+Modified: 2026-05-30 11:54:46 (Asia/Calcutta / GMT+06:30)
+MD5: bd4e1be229011e300c6ab6de11de2987
+SHA256: 8ab3f512dcc155a2fb0e74e576844e4505d57bc3f5d2bcdd7a4f9c5450bf119b
 Encoding: ASCII
 
 FILE CONTENT:
 ----------------------------------------
 import express from "express";
 import { handleCreateEvent, handleJoinEvent, handleViewEvent } from "../controller/eventController.js";
-import { eventFiller } from "../middleware/eventLoader.js";
+import { eventFiller, perHeadFiller } from "../middleware/eventLoader.js";
 
 const router = express.Router();
 
@@ -1379,7 +1437,7 @@ router.get("/join", eventFiller, (req, res) => {
   res.render("join-event");
 });
 
-router.get("/:id", eventFiller, handleViewEvent);
+router.get("/:id", perHeadFiller, handleViewEvent);
 
 router.post("/join", handleJoinEvent);
 
