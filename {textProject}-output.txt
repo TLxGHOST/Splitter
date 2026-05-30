@@ -5,7 +5,7 @@ PROJECT EXPORT FOR LLMs
 PROJECT INFORMATION:
 --------------------------------------------------
 Project Name: Splitter
-Generated On: 2026-05-30 05:31:12 (Asia/Calcutta / GMT+06:30)
+Generated On: 2026-05-30 06:16:32 (Asia/Calcutta / GMT+06:30)
 Total Files Processed: 30
 Export Tool: Easy Whole Project to Single Text File for LLMs v1.1.0
 Tool Author: Jota / José Guilherme Pandolfi
@@ -23,7 +23,7 @@ Custom File Name Pattern: {textProject}-output
 PROJECT STRUCTURE
 ================================================================================
 ├── 📁 config/
-│   └── 📄 passport.js (2.59 KB)
+│   └── 📄 passport.js (2.61 KB)
 ├── 📁 controller/
 │   ├── 📄 authController.js (759 B)
 │   ├── 📄 eventController.js (2.59 KB)
@@ -37,26 +37,26 @@ PROJECT STRUCTURE
 │   └── 📄 users.js (314 B)
 ├── 📁 public/
 │   ├── 📁 css/
-│   │   └── 📄 style.css (1.44 KB)
+│   │   └── 📄 style.css (10.7 KB)
 │   └── 📁 images/
 ├── 📁 routes/
-│   ├── 📄 basePath.js (922 B)
+│   ├── 📄 basePath.js (1.04 KB)
 │   ├── 📄 events.js (575 B)
 │   └── 📄 expenses.js (309 B)
 ├── 📁 utility/
 │   └── 📄 joincodes.js (612 B)
 ├── 📁 views/
 │   ├── 📁 partials/
-│   │   ├── 📄 footer.ejs (317 B)
-│   │   └── 📄 header.ejs (812 B)
-│   ├── 📄 create-event.ejs (439 B)
-│   ├── 📄 dashboard.ejs (1.4 KB)
-│   ├── 📄 event.ejs (1.37 KB)
-│   ├── 📄 home.ejs (436 B)
-│   ├── 📄 join-event.ejs (331 B)
+│   │   ├── 📄 footer.ejs (115 B)
+│   │   └── 📄 header.ejs (755 B)
+│   ├── 📄 create-event.ejs (645 B)
+│   ├── 📄 dashboard.ejs (1.79 KB)
+│   ├── 📄 event.ejs (2.35 KB)
+│   ├── 📄 home.ejs (701 B)
+│   ├── 📄 join-event.ejs (746 B)
 │   ├── 📄 layout.ejs (536 B)
-│   ├── 📄 login.ejs (588 B)
-│   └── 📄 register.ejs (514 B)
+│   ├── 📄 login.ejs (1.97 KB)
+│   └── 📄 register.ejs (950 B)
 ├── 📄 db.js (532 B)
 ├── 📄 dbOnline.txt (8.03 KB)
 ├── 📄 package-lock.json (70.43 KB)
@@ -71,7 +71,7 @@ Total Files: 30
 Total Directories: 11
 Text Files: 20
 Binary Files: 10
-Total Size: 103.64 KB
+Total Size: 116.87 KB
 
 FILE TYPES DISTRIBUTION:
 ------------------------------
@@ -93,15 +93,15 @@ FILE: config/passport.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 2.59 KB
+Size: 2.61 KB
 Extension: .js
 Language: javascript
 Location: config/passport.js
 Relative Path: config
 Created: 2026-03-19 15:13:24 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 05:09:26 (Asia/Calcutta / GMT+06:30)
-MD5: 9ed6115e55a16bd25a120f58b6d4f340
-SHA256: 8b7e4eaf353f5e1fdaf328a59d3dbb100daa9cf14537fceb1f285d1250e0114c
+Modified: 2026-05-30 06:03:45 (Asia/Calcutta / GMT+06:30)
+MD5: 3f7a6bb86231201fc1c4a2687fd05a50
+SHA256: 200a300bdbab8ebd250943c5b2bfd7b36224d32b793e5f02af93ecafeb32def6
 Encoding: ASCII
 
 FILE CONTENT:
@@ -156,12 +156,14 @@ export default function passportConfigurations() {
         const user = await db.query("SELECT * FROM users WHERE google_id=$1", [profile.id]);
 
         if (user.rows.length > 0) {
+
+          // console.log(profile)
+          // console.log(profile.emails)
+          // console.log(profile.emails[0])
+          // console.log(profile.emails[0].value + " " + profile.id);
           return done(null, user.rows[0]);
         }
-        console.log(profile)
-        console.log(profile.emails)
-        console.log(profile.emails[0])
-        console.log(profile.emails[0].value + " " + profile.id);
+
         const newUser = await db.query("INSERT INTO users (email, google_id) VALUES ($1,$2) RETURNING *", [profile.emails[0].value, profile.id]);
 
         return done(null, newUser.rows[0]);
@@ -682,130 +684,594 @@ FILE: public/css/style.css
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 1.44 KB
+Size: 10.7 KB
 Extension: .css
 Language: css
 Location: public/css/style.css
 Relative Path: public/css
 Created: 2026-03-19 00:16:20 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-03-22 04:29:30 (Asia/Calcutta / GMT+06:30)
-MD5: 92388c196b88de39e0b1239ed1d5dbf7
-SHA256: eba6c7ad95f942b45f9748e10f1fd090c91a9af44e3b03e4f76e2d07fc731705
-Encoding: ASCII
+Modified: 2026-05-30 06:14:42 (Asia/Calcutta / GMT+06:30)
+MD5: 33657ee09dd4abf6ac961310509f22ee
+SHA256: 8fd010280e1a07dd868e89c8ab3a2643afa4cd15afc547ccc8fa14582ca8c7df
+Encoding: UTF-8
 
 FILE CONTENT:
 ----------------------------------------
-body{
-font-family:system-ui;
-margin:0;
-background:#f5f7fb;
+/* ============================================
+   SPLITTER — Style System
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg:         #0d1117;
+  --bg-card:    #161b22;
+  --bg-input:   #0d1117;
+  --border:     #30363d;
+  --border-focus: #f0a500;
+
+  --text:       #e6edf3;
+  --text-muted: #7d8590;
+  --text-dim:   #484f58;
+
+  --accent:     #f0a500;
+  --accent-dim: #f0a50022;
+  --accent-hover: #ffb700;
+
+  --danger:     #f85149;
+  --danger-dim: #f8514915;
+
+  --success:    #3fb950;
+
+  --radius:     10px;
+  --radius-lg:  16px;
+  --shadow:     0 4px 24px rgba(0,0,0,0.4);
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.3);
+
+  --font-body:    'DM Sans', sans-serif;
+  --font-display: 'Syne', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
 }
 
-.navbar{
-display:flex;
-justify-content:space-between;
-padding:18px 40px;
-background:#111827;
-color:white;
+/* ---- Reset & Base ---- */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
-.nav-links a{
-color:white;
-margin-left:20px;
-text-decoration:none;
+a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
+a:hover { color: var(--accent-hover); }
+
+/* ---- Nav ---- */
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 60px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.container{
-max-width:1100px;
-margin:auto;
-padding:40px;
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
 }
 
-.hero{
-text-align:center;
-padding:100px 20px;
+.nav-logo span {
+  color: var(--accent);
 }
 
-.hero h1{
-font-size:48px;
-margin-bottom:10px;
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.hero-buttons a{
-margin:10px;
-padding:12px 22px;
-border-radius:6px;
-text-decoration:none;
+.nav-links a {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.15s;
 }
 
-.btn-primary{
-background:#4f46e5;
-color:white;
+.nav-links a:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.05);
 }
 
-.btn-secondary{
-background:#e5e7eb;
-color:black;
+.nav-links a.nav-cta {
+  color: var(--bg);
+  background: var(--accent);
+  font-weight: 600;
 }
 
-.card{
-background:white;
-padding:35px;
-border-radius:10px;
-box-shadow:0 10px 30px rgba(0,0,0,0.08);
-max-width:420px;
-margin:auto;
+.nav-links a.nav-cta:hover {
+  background: var(--accent-hover);
 }
 
-input{
-width:100%;
-padding:12px;
-margin:10px 0;
-border-radius:6px;
-border:1px solid #ccc;
+/* ---- Layout ---- */
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 40px;
+  flex: 1;
 }
 
-button{
-padding:12px 18px;
-border:none;
-border-radius:6px;
-cursor:pointer;
+.container-sm {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  flex: 1;
 }
 
-.event-grid{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-gap:20px;
-margin-top:25px;
+/* ---- Footer ---- */
+
+.footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 13px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
 }
 
-.event-card{
-background:white;
-padding:20px;
-border-radius:8px;
-box-shadow:0 5px 20px rgba(0,0,0,0.05);
+/* ---- Hero ---- */
+
+.hero {
+  text-align: center;
+  padding: 80px 20px 60px;
 }
 
-.expense-card{
-display:flex;
-justify-content:space-between;
-background:white;
-padding:12px;
-margin-bottom:10px;
-border-radius:6px;
+.hero-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 100px;
+  padding: 4px 14px;
+  margin-bottom: 24px;
+  letter-spacing: 0.05em;
 }
 
-.btn-danger{
-background:#ef4444;
-color:white;
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 6vw, 64px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  margin-bottom: 16px;
+  color: var(--text);
 }
 
-.footer{
-text-align:center;
-padding:20px;
-color:#777;
-
+.hero h1 span {
+  color: var(--accent);
 }
+
+.hero p {
+  font-size: 18px;
+  color: var(--text-muted);
+  max-width: 480px;
+  margin: 0 auto 36px;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ---- Buttons ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #0d1117;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  color: #0d1117;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(240,165,0,0.3);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+  background: rgba(255,255,255,0.04);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn-danger:hover {
+  background: var(--danger-dim);
+  border-color: var(--danger);
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+
+.btn-google:hover {
+  border-color: var(--text-muted);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+
+.btn-full { width: 100%; justify-content: center; }
+
+/* ---- Auth Card ---- */
+
+.auth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow);
+}
+
+.auth-card h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+.auth-card .subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-footer {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 20px;
+}
+
+/* ---- Form Elements ---- */
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"] {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+input::placeholder { color: var(--text-dim); }
+
+/* ---- Dashboard ---- */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.page-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.page-header .actions {
+  display: flex;
+  gap: 8px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.event-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  transition: border-color 0.15s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.event-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.join-code-pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 3px 10px;
+  letter-spacing: 0.1em;
+}
+
+.event-card .open-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: auto;
+}
+
+.empty-state {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 40px;
+}
+
+/* ---- Event Page ---- */
+
+.event-header {
+  margin-bottom: 32px;
+}
+
+.event-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 10px;
+}
+
+.event-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+.panel h3 {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.member-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.member-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.member-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.expense-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.expense-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  gap: 12px;
+}
+
+.expense-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.expense-desc {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.expense-amount {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.add-expense-form {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.add-expense-form .form-group {
+  flex: 1;
+  min-width: 140px;
+  margin-bottom: 0;
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 768px) {
+  .navbar { padding: 0 20px; }
+  .container { padding: 32px 20px; }
+  .event-layout { grid-template-columns: 1fr; }
+  .page-header { flex-direction: column; align-items: flex-start; }
+}
+
 ================================================================================
 
 
@@ -815,15 +1281,15 @@ FILE: routes/basePath.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 922 B
+Size: 1.04 KB
 Extension: .js
 Language: javascript
 Location: routes/basePath.js
 Relative Path: routes
 Created: 2026-04-21 01:57:23 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-25 07:32:24 (Asia/Calcutta / GMT+06:30)
-MD5: d655225fd7eecf4bb206262547393d27
-SHA256: 2b89e7885707e44f7219f04518882e12dc6fb155434189ade4c971374a572bc8
+Modified: 2026-05-30 06:12:40 (Asia/Calcutta / GMT+06:30)
+MD5: a2e5c74f7bbde554daff7393b3e64ba8
+SHA256: 0c9679f0a3c12744a66a68749c4299549a8e9e171626d8a68d50c557b4384278
 Encoding: ASCII
 
 FILE CONTENT:
@@ -831,7 +1297,7 @@ FILE CONTENT:
 import express from "express";
 import { eventFiller, joinedEventFiller } from "../middleware/eventLoader.js";
 import { handleRegister } from "../controller/authController.js";
-const router=express.Router();
+const router = express.Router();
 
 router.get("/", eventFiller, joinedEventFiller, (req, res) => {
   if (req.session.view) {
@@ -857,7 +1323,13 @@ router.get("/logout", (req, res, next) => {
     if (err) {
       return next(err);
     }
-    res.redirect("/");
+    req.session.destroy((err) => {
+      if (err) {
+        return next(err);
+      }
+      res.clearCookie("connect.sid");
+      res.redirect("/");
+    });
   });
 });
 

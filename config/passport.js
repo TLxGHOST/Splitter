@@ -48,12 +48,14 @@ export default function passportConfigurations() {
         const user = await db.query("SELECT * FROM users WHERE google_id=$1", [profile.id]);
 
         if (user.rows.length > 0) {
+
+          // console.log(profile)
+          // console.log(profile.emails)
+          // console.log(profile.emails[0])
+          // console.log(profile.emails[0].value + " " + profile.id);
           return done(null, user.rows[0]);
         }
-        console.log(profile)
-        console.log(profile.emails)
-        console.log(profile.emails[0])
-        console.log(profile.emails[0].value + " " + profile.id);
+
         const newUser = await db.query("INSERT INTO users (email, google_id) VALUES ($1,$2) RETURNING *", [profile.emails[0].value, profile.id]);
 
         return done(null, newUser.rows[0]);

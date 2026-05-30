@@ -1,7 +1,7 @@
 import express from "express";
 import { eventFiller, joinedEventFiller } from "../middleware/eventLoader.js";
 import { handleRegister } from "../controller/authController.js";
-const router=express.Router();
+const router = express.Router();
 
 router.get("/", eventFiller, joinedEventFiller, (req, res) => {
   if (req.session.view) {
@@ -27,7 +27,13 @@ router.get("/logout", (req, res, next) => {
     if (err) {
       return next(err);
     }
-    res.redirect("/");
+    req.session.destroy((err) => {
+      if (err) {
+        return next(err);
+      }
+      res.clearCookie("connect.sid");
+      res.redirect("/");
+    });
   });
 });
 
