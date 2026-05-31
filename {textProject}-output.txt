@@ -5,7 +5,7 @@ PROJECT EXPORT FOR LLMs
 PROJECT INFORMATION:
 --------------------------------------------------
 Project Name: Splitter
-Generated On: 2026-05-31 04:50:23 (Asia/Calcutta / GMT+06:30)
+Generated On: 2026-05-31 06:24:30 (Asia/Calcutta / GMT+06:30)
 Total Files Processed: 32
 Export Tool: Easy Whole Project to Single Text File for LLMs v1.1.0
 Tool Author: Jota / José Guilherme Pandolfi
@@ -26,11 +26,11 @@ PROJECT STRUCTURE
 │   └── 📄 passport.js (2.73 KB)
 ├── 📁 controller/
 │   ├── 📄 authController.js (759 B)
-│   ├── 📄 eventController.js (4.83 KB)
+│   ├── 📄 eventController.js (5.98 KB)
 │   ├── 📄 expenseController.js (1.36 KB)
 │   └── 📄 paymentController.js (2.56 KB)
 ├── 📁 middleware/
-│   └── 📄 eventLoader.js (6.46 KB)
+│   └── 📄 eventLoader.js (7 KB)
 ├── 📁 model/
 │   ├── 📄 event_members.js (384 B)
 │   ├── 📄 events.js (369 B)
@@ -53,7 +53,7 @@ PROJECT STRUCTURE
 │   │   └── 📄 header.ejs (750 B)
 │   ├── 📄 create-event.ejs (645 B)
 │   ├── 📄 dashboard.ejs (6.75 KB)
-│   ├── 📄 event.ejs (7.93 KB)
+│   ├── 📄 event.ejs (8.57 KB)
 │   ├── 📄 home.ejs (701 B)
 │   ├── 📄 join-event.ejs (746 B)
 │   ├── 📄 layout.ejs (536 B)
@@ -73,7 +73,7 @@ Total Files: 32
 Total Directories: 11
 Text Files: 22
 Binary Files: 10
-Total Size: 143.63 KB
+Total Size: 145.96 KB
 
 FILE TYPES DISTRIBUTION:
 ------------------------------
@@ -269,15 +269,15 @@ FILE: controller/eventController.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 4.83 KB
+Size: 5.98 KB
 Extension: .js
 Language: javascript
 Location: controller/eventController.js
 Relative Path: controller
 Created: 2026-05-30 20:55:46 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 20:55:46 (Asia/Calcutta / GMT+06:30)
-MD5: 62a2add1b0f61030452207d35d5f90dc
-SHA256: 7461c57a286a594bc8049c6ad0dde6a21f95760ba36db7731b87db48155b4325
+Modified: 2026-05-31 06:24:30 (Asia/Calcutta / GMT+06:30)
+MD5: feecbb7851da914ac9895bb87b5b4abc
+SHA256: 5eaed32c36b62eeb5bc628a077ed80981d9f35ad45b5a191ac70535c8ca61610
 Encoding: ASCII
 
 FILE CONTENT:
@@ -417,6 +417,33 @@ const handleViewEvent = async (req, res) => {
        GROUP BY payee_id`,
       [eventID, req.user.id]
     );
+    const settlementsReceivedResult = await db.query(
+      `SELECT payee_id, SUM(amount) AS total
+   FROM settlements
+   WHERE event_id = $1 AND status = 'paid'
+   GROUP BY payee_id`,
+      [eventID]
+    );
+
+    const settlementsReceivedMap = {};
+    settlementsReceivedResult.rows.forEach(row => {
+      settlementsReceivedMap[parseInt(row.payee_id)] = parseFloat(row.total) || 0;
+    });
+
+    // settlements paid out by each member TO others in this event  
+    const settlementsPaidResult = await db.query(
+      `SELECT payer_id, SUM(amount) AS total
+   FROM settlements
+   WHERE event_id = $1 AND status = 'paid'
+   GROUP BY payer_id`,
+      [eventID]
+    );
+
+
+    const settlementsPaidMap = {};
+    settlementsPaidResult.rows.forEach(row => {
+      settlementsPaidMap[parseInt(row.payer_id)] = parseFloat(row.total) || 0;
+    });
 
     const settledMap = {};
     settlementsResult.rows.forEach(row => {
@@ -430,24 +457,31 @@ const handleViewEvent = async (req, res) => {
     const fairShare = memberCount > 0 ? totalExpenses / memberCount : 0;
 
     const membersWithData = membersResult.rows.map(m => {
-      const paid = spendingMap[m.id] || 0;
-      const balance = paid - fairShare;  // positive = others owe them, negative = they owe others
-      const alreadySettled = settledMap[m.id] || 0;
+      const memberID = parseInt(m.id);
+      const paid = spendingMap[memberID] || 0;
+      const balance = paid - fairShare;
+      const alreadySettled = settledMap[memberID] || 0;
+      const settlementsReceived = settlementsReceivedMap[memberID] || 0;
+      const settlementsPaid = settlementsPaidMap[memberID] || 0;
 
       let owedByMe = 0;
-      if (m.id !== req.user.id && balance > 0.01) {
-        // this member paid more than their share
-        // current user owes them their fair portion of that overpayment
-        const myDebt = fairShare - (spendingMap[req.user.id] || 0);
+      if (memberID !== parseInt(req.user.id) && balance > 0.01) {
         owedByMe = Math.max(0, Math.min(myDebt, balance) - alreadySettled);
       }
+
+      // net contribution = expenses paid + settlements received - settlements paid out
+      const netContribution = paid + settlementsReceived - settlementsPaid;
 
       return {
         ...m,
         totalSpent: paid,
+        settlementsReceived,
+        settlementsPaid,
+        netContribution,
         balance,
         owedByMe,
-        alreadySettled
+        alreadySettled,
+        isSettled: Math.max(0, fairShare - paid) < 0.01 || settlementsPaid >= Math.max(0, fairShare - paid)
       };
     });
 
@@ -660,15 +694,15 @@ FILE: middleware/eventLoader.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 6.46 KB
+Size: 7 KB
 Extension: .js
 Language: javascript
 Location: middleware/eventLoader.js
 Relative Path: middleware
 Created: 2026-05-30 12:17:41 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-30 20:39:44 (Asia/Calcutta / GMT+06:30)
-MD5: da1ee9e2ac84b891be4f426d3443c188
-SHA256: 73f3208a4c378b346b591be1af8fa2f4eb9be6de41c6a0add9c0777af6cd0172
+Modified: 2026-05-31 06:05:00 (Asia/Calcutta / GMT+06:30)
+MD5: a035d8f4fbfc7696faa0f8e120385ac1
+SHA256: 84dc4db375a814d10d876ec71a232e903b01d799e9b4629816d42d63520dacec
 Encoding: ASCII
 
 FILE CONTENT:
@@ -768,14 +802,20 @@ async function perHeadFiller(req, res, next) {
     );
     const memberCount = parseInt(memberRes.rows[0].count, 10) || 1;
 
+    // console.log("Debugging area reached ")
+    // console.log(memberCount);
+
     const fairShare = totalExpenses / memberCount;
 
+    console.log("fairshare= " + fairShare + " total expenses = " + totalExpenses + " memberCount = " + memberCount);
     const myPaidRes = await db.query(
       `SELECT COALESCE(SUM(amount), 0) AS total 
        FROM expenses WHERE event_id = $1 AND paid_by = $2`,
       [eventID, userID]
     );
     const myPaid = parseFloat(myPaidRes.rows[0].total) || 0;
+
+    console.log("myPaid = " + myPaid);
 
     const iPaidOutRes = await db.query(
       `SELECT COALESCE(SUM(amount), 0) AS total 
@@ -785,6 +825,8 @@ async function perHeadFiller(req, res, next) {
     );
     const iPaidOut = parseFloat(iPaidOutRes.rows[0].total) || 0;
 
+    console.log("ipaidOut = " + iPaidOut);
+
     const iPaidInRes = await db.query(
       `SELECT COALESCE(SUM(amount), 0) AS total 
        FROM settlements
@@ -793,7 +835,17 @@ async function perHeadFiller(req, res, next) {
     );
     const iPaidIn = parseFloat(iPaidInRes.rows[0].total) || 0;
 
+    console.log("ipaidIn = " + iPaidIn);
+
+
+    console.log("DEBUG FORMULA", myPaid, fairShare, iPaidIn, iPaidOut,
+      (myPaid - fairShare) - iPaidIn + iPaidOut
+    );
+
+    console.log("LINE REACHED V2");
+
     res.locals.perHeadAmount = (myPaid - fairShare) - iPaidIn + iPaidOut;
+    console.log(res.locals.perHeadAmount);
 
     next();
   } catch (err) {
@@ -880,6 +932,8 @@ async function dashboardBalanceFiller(req, res, next) {
       const paidIn = paidInMap[parseInt(row.event_id)] || 0;
 
       balanceMap[parseInt(row.event_id)] = (paidByMe - fairShare) - paidIn + paidOut;
+
+
     });
 
     res.locals.eventBalances = allEvents.map(event => ({

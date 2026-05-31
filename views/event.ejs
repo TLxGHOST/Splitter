@@ -25,20 +25,32 @@
                 <span class="member-email">
                   <%= member.email %>
                 </span>
-                <span class="member-spent">₹<%= member.totalSpent.toFixed(2) %> paid</span>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <span class="member-spent">
+                    ₹<%= member.totalSpent.toFixed(2) %> paid for group
+                  </span>
+                  <% if (member.settlementsPaid> 0) { %>
+                    <span style="font-size:11px; font-family:var(--font-mono); color:var(--danger);">
+                      ₹<%= member.settlementsPaid.toFixed(2) %> settled out
+                    </span>
+                    <% } %>
+                      <% if (member.settlementsReceived> 0) { %>
+                        <span style="font-size:11px; font-family:var(--font-mono); color:var(--success);">
+                          ₹<%= member.settlementsReceived.toFixed(2) %> received back
+                        </span>
+                        <% } %>
+                </div>
               </div>
             </div>
 
             <% if (member.id !==currentUserID) { %>
               <% if (member.owedByMe> 0.01) { %>
-                <!-- they paid more than fair share, you owe them -->
                 <button class="btn btn-primary pay-btn" style="font-size:12px; padding: 6px 12px;"
                   data-payee-id="<%= member.id %>" data-payee-email="<%= member.email %>"
                   data-amount="<%= member.owedByMe.toFixed(2) %>" data-event-id="<%= event.id %>">
                   Pay ₹<%= member.owedByMe.toFixed(2) %>
                 </button>
-                <% } else if (member.balance < -0.01) { %>
-                  <!-- they paid less than fair share, they owe the group -->
+                <% } else if (member.balance < -0.01 && !member.isSettled) { %>
                   <button class="btn btn-secondary remind-btn" style="font-size:12px; padding: 6px 12px;"
                     data-email="<%= member.email %>">
                     Remind
@@ -49,6 +61,7 @@
                       <% } else { %>
                         <span style="font-size:12px; color: var(--text-muted);">You</span>
                         <% } %>
+
           </li>
           <% }) %>
       </ul>

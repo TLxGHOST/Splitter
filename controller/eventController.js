@@ -133,6 +133,33 @@ const handleViewEvent = async (req, res) => {
        GROUP BY payee_id`,
       [eventID, req.user.id]
     );
+    const settlementsReceivedResult = await db.query(
+      `SELECT payee_id, SUM(amount) AS total
+   FROM settlements
+   WHERE event_id = $1 AND status = 'paid'
+   GROUP BY payee_id`,
+      [eventID]
+    );
+
+    const settlementsReceivedMap = {};
+    settlementsReceivedResult.rows.forEach(row => {
+      settlementsReceivedMap[parseInt(row.payee_id)] = parseFloat(row.total) || 0;
+    });
+
+    // settlements paid out by each member TO others in this event  
+    const settlementsPaidResult = await db.query(
+      `SELECT payer_id, SUM(amount) AS total
+   FROM settlements
+   WHERE event_id = $1 AND status = 'paid'
+   GROUP BY payer_id`,
+      [eventID]
+    );
+
+
+    const settlementsPaidMap = {};
+    settlementsPaidResult.rows.forEach(row => {
+      settlementsPaidMap[parseInt(row.payer_id)] = parseFloat(row.total) || 0;
+    });
 
     const settledMap = {};
     settlementsResult.rows.forEach(row => {
@@ -146,24 +173,31 @@ const handleViewEvent = async (req, res) => {
     const fairShare = memberCount > 0 ? totalExpenses / memberCount : 0;
 
     const membersWithData = membersResult.rows.map(m => {
-      const paid = spendingMap[m.id] || 0;
-      const balance = paid - fairShare;  // positive = others owe them, negative = they owe others
-      const alreadySettled = settledMap[m.id] || 0;
+      const memberID = parseInt(m.id);
+      const paid = spendingMap[memberID] || 0;
+      const balance = paid - fairShare;
+      const alreadySettled = settledMap[memberID] || 0;
+      const settlementsReceived = settlementsReceivedMap[memberID] || 0;
+      const settlementsPaid = settlementsPaidMap[memberID] || 0;
 
       let owedByMe = 0;
-      if (m.id !== req.user.id && balance > 0.01) {
-        // this member paid more than their share
-        // current user owes them their fair portion of that overpayment
-        const myDebt = fairShare - (spendingMap[req.user.id] || 0);
+      if (memberID !== parseInt(req.user.id) && balance > 0.01) {
         owedByMe = Math.max(0, Math.min(myDebt, balance) - alreadySettled);
       }
+
+      // net contribution = expenses paid + settlements received - settlements paid out
+      const netContribution = paid + settlementsReceived - settlementsPaid;
 
       return {
         ...m,
         totalSpent: paid,
+        settlementsReceived,
+        settlementsPaid,
+        netContribution,
         balance,
         owedByMe,
-        alreadySettled
+        alreadySettled,
+        isSettled: Math.max(0, fairShare - paid) < 0.01 || settlementsPaid >= Math.max(0, fairShare - paid)
       };
     });
 

@@ -93,14 +93,20 @@ async function perHeadFiller(req, res, next) {
     );
     const memberCount = parseInt(memberRes.rows[0].count, 10) || 1;
 
+    // console.log("Debugging area reached ")
+    // console.log(memberCount);
+
     const fairShare = totalExpenses / memberCount;
 
+    console.log("fairshare= " + fairShare + " total expenses = " + totalExpenses + " memberCount = " + memberCount);
     const myPaidRes = await db.query(
       `SELECT COALESCE(SUM(amount), 0) AS total 
        FROM expenses WHERE event_id = $1 AND paid_by = $2`,
       [eventID, userID]
     );
     const myPaid = parseFloat(myPaidRes.rows[0].total) || 0;
+
+    console.log("myPaid = " + myPaid);
 
     const iPaidOutRes = await db.query(
       `SELECT COALESCE(SUM(amount), 0) AS total 
@@ -110,6 +116,8 @@ async function perHeadFiller(req, res, next) {
     );
     const iPaidOut = parseFloat(iPaidOutRes.rows[0].total) || 0;
 
+    console.log("ipaidOut = " + iPaidOut);
+
     const iPaidInRes = await db.query(
       `SELECT COALESCE(SUM(amount), 0) AS total 
        FROM settlements
@@ -118,7 +126,17 @@ async function perHeadFiller(req, res, next) {
     );
     const iPaidIn = parseFloat(iPaidInRes.rows[0].total) || 0;
 
+    console.log("ipaidIn = " + iPaidIn);
+
+
+    console.log("DEBUG FORMULA", myPaid, fairShare, iPaidIn, iPaidOut,
+      (myPaid - fairShare) - iPaidIn + iPaidOut
+    );
+
+    console.log("LINE REACHED V2");
+
     res.locals.perHeadAmount = (myPaid - fairShare) - iPaidIn + iPaidOut;
+    console.log(res.locals.perHeadAmount);
 
     next();
   } catch (err) {
@@ -205,6 +223,8 @@ async function dashboardBalanceFiller(req, res, next) {
       const paidIn = paidInMap[parseInt(row.event_id)] || 0;
 
       balanceMap[parseInt(row.event_id)] = (paidByMe - fairShare) - paidIn + paidOut;
+
+
     });
 
     res.locals.eventBalances = allEvents.map(event => ({
