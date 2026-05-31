@@ -5,7 +5,7 @@ PROJECT EXPORT FOR LLMs
 PROJECT INFORMATION:
 --------------------------------------------------
 Project Name: Splitter
-Generated On: 2026-05-31 17:01:45 (Asia/Calcutta / GMT+06:30)
+Generated On: 2026-05-31 17:06:09 (Asia/Calcutta / GMT+06:30)
 Total Files Processed: 32
 Export Tool: Easy Whole Project to Single Text File for LLMs v1.1.0
 Tool Author: Jota / José Guilherme Pandolfi
@@ -25,7 +25,7 @@ PROJECT STRUCTURE
 ├── 📁 config/
 │   └── 📄 passport.js (2.73 KB)
 ├── 📁 controller/
-│   ├── 📄 authController.js (2.25 KB)
+│   ├── 📄 authController.js (3.37 KB)
 │   ├── 📄 eventController.js (6.41 KB)
 │   ├── 📄 expenseController.js (1.36 KB)
 │   └── 📄 paymentController.js (2.56 KB)
@@ -73,7 +73,7 @@ Total Files: 32
 Total Directories: 11
 Text Files: 22
 Binary Files: 10
-Total Size: 153.71 KB
+Total Size: 154.82 KB
 
 FILE TYPES DISTRIBUTION:
 ------------------------------
@@ -207,31 +207,30 @@ FILE: controller/authController.js
 
 FILE INFORMATION:
 ----------------------------------------
-Size: 2.25 KB
+Size: 3.37 KB
 Extension: .js
 Language: javascript
 Location: controller/authController.js
 Relative Path: controller
-Created: 2026-05-31 10:05:21 (Asia/Calcutta / GMT+06:30)
-Modified: 2026-05-31 10:05:29 (Asia/Calcutta / GMT+06:30)
-MD5: c455db5c67235a7eaeb6a28f04b4f48f
-SHA256: 102459e1314ada6e289f6a5e0fa98dfee28ad9d1d0ff80c87786c89f2f0e2aa6
+Created: 2026-05-31 17:03:13 (Asia/Calcutta / GMT+06:30)
+Modified: 2026-05-31 17:06:08 (Asia/Calcutta / GMT+06:30)
+MD5: 23b0c235f137883d206f47c8c7be16dc
+SHA256: 0f9cb6410da023a94060965ee8cd3da6ac5be6d554cf1bc5bf717662e31646a0
 Encoding: ASCII
 
 FILE CONTENT:
 ----------------------------------------
-import db from "../db.js"; // [cite: 15]
-import bcrypt from "bcrypt"; // [cite: 16]
+import db from "../db.js";
+import bcrypt from "bcrypt";
 import dns from "dns/promises";
 
-const saltRound = Number(process.env.SALT_ROUND); // [cite: 16]
+const saltRound = Number(process.env.SALT_ROUND);
 
-// 1. Array of banned placeholder domains and exact emails
 const EMAIL_BLOCKLIST = [
   "example.com",
   "test.com",
   "domain.com",
-  "mailinator.com", // Common disposable email service
+  "mailinator.com",
   "10minutemail.com",
   "placeholder.com",
   "abc.com",
@@ -255,7 +254,6 @@ async function validateEmailLegitimacy(email) {
       return { valid: false, message: "Registration error: This domain does not have active mail servers." };
     }
   } catch (error) {
-
     return { valid: false, message: "Registration error: The email domain does not exist." };
   }
 
@@ -264,9 +262,10 @@ async function validateEmailLegitimacy(email) {
 
 async function handleRegister(req, res) {
   try {
-    const username = req.body.username;
+    const username = req.body.username?.toLowerCase().trim();
     const password = req.body.password;
 
+    // 1. Run legitimacy validation checks
     const emailCheck = await validateEmailLegitimacy(username);
     if (!emailCheck.valid) {
       return res.status(400).send(emailCheck.message);
@@ -276,28 +275,55 @@ async function handleRegister(req, res) {
       return res.status(400).send("Registration error: Password must be at least 6 characters long.");
     }
 
+    // 2. Query the database to see if this email exists
     const dbResult = await db.query(
       "SELECT * FROM users WHERE email=$1",
       [username]
     );
 
+    const hashedPass = await bcrypt.hash(password, saltRound);
+
     if (dbResult.rows.length === 0) {
-      const hashedPass = await bcrypt.hash(password, saltRound);
+      // CASE A: True new registration -> INSERT standard row
       await db.query(
-        "INSERT INTO users(email,password) VALUES($1,$2)",
+        "INSERT INTO users(email, password) VALUES($1, $2)",
         [username, hashedPass]
       );
+      return res.redirect("/login?registered=1");
+
+    } else {
+      const existingUser = dbResult.rows[0];
+
+      // CASE B: User signed up via Google originally but has no local password yet
+      if (existingUser.google_id && !existingUser.password) {
+        await db.query(
+          "UPDATE users SET password = $1 WHERE email = $2",
+          [hashedPass, username]
+        );
+        return res.redirect("/login?account_linked=1");
+      }
+
+      // CASE C: An authenticated user trying to overwrite their password from this route
+      // (Or a malicious/accidental attempt to re-register an existing full profile)
+      if (req.isAuthenticated() && req.user.email === username) {
+        await db.query(
+          "UPDATE users SET password = $1 WHERE email = $2",
+          [hashedPass, username]
+        );
+        return res.redirect("/dashboard?password_updated=1");
+      }
+
+      // CASE D: Standard duplicate email block guard
+      return res.status(400).send("Registration error: An account with this email address already exists.");
     }
 
-    res.redirect("/login");
-
   } catch (err) {
-    console.error(err);
-    res.send("Registration error");
+    console.error("Registration pipeline error:", err);
+    res.status(500).send("Registration error");
   }
 }
 
-export { handleRegister }; 
+export { handleRegister };
 ================================================================================
 
 
