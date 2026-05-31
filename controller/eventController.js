@@ -2,28 +2,38 @@ import db from "../db.js";
 import createUniqueCode from "../utility/joincodes.js";
 
 async function handleCreateEvent(req, res) {
-
   if (!req.isAuthenticated()) {
     return res.redirect("/login");
   }
 
-  const joinCode = await createUniqueCode();
+  try {
+    const joinCode = await createUniqueCode();
 
-  await db.query(
-    "INSERT INTO events (name, join_code, created_by) VALUES ($1,$2,$3)",
-    [req.body.name, joinCode, req.user.id]
-  );
+    const newEvent = await db.query(
+      "INSERT INTO events (name, join_code, created_by) VALUES ($1,$2,$3) RETURNING id",
+      [req.body.name, joinCode, req.user.id]
+    );
 
+    const newEventID = newEvent.rows[0].id;
 
+    await db.query(
+      "INSERT INTO event_members (event_id, user_id) VALUES ($1,$2)",
+      [newEventID, req.user.id]
+    );
 
-  res.redirect("/dashboard");
+    res.redirect("/dashboard");
+
+  } catch (err) {
+    console.error("Error creating event:", err);
+    res.status(500).send("Error creating event");
+  }
 }
 
 async function handleDeleteEvent(req, res) {
-
   if (!req.isAuthenticated()) {
     return res.redirect("/login");
   }
+
   const eventID = req.params.id;
 
   try {
@@ -40,38 +50,42 @@ async function handleDeleteEvent(req, res) {
 }
 
 async function handleJoinEvent(req, res) {
-
   if (!req.isAuthenticated()) {
     return res.redirect("/login");
   }
-  const joinCode = req.body.code;
 
-  const eventResult = await db.query(
-    "SELECT * FROM events WHERE join_code=$1",
-    [joinCode]
-  );
+  try {
+    const joinCode = req.body.code;
 
-  if (!eventResult.rows.length) {
-    return res.status(404).send("Event not found");
+    const eventResult = await db.query(
+      "SELECT * FROM events WHERE join_code=$1",
+      [joinCode]
+    );
+
+    if (!eventResult.rows.length) {
+      return res.status(404).send("Event not found");
+    }
+
+    const memberResult = await db.query(
+      "SELECT * FROM event_members WHERE event_id=$1 AND user_id=$2",
+      [eventResult.rows[0].id, req.user.id]
+    );
+
+    if (memberResult.rows.length) {
+      return res.status(400).send("You are already a member of this event");
+    }
+
+    await db.query(
+      "INSERT INTO event_members (event_id, user_id) VALUES ($1,$2)",
+      [eventResult.rows[0].id, req.user.id]
+    );
+
+    res.redirect("/dashboard");
+
+  } catch (err) {
+    console.error("Error joining event:", err);
+    res.status(500).send("Error joining event");
   }
-
-  // Check if user is already a member
-  const memberResult = await db.query(
-    "SELECT * FROM event_members WHERE event_id=$1 AND user_id=$2",
-    [eventResult.rows[0].id, req.user.id]
-  );
-
-  if (memberResult.rows.length) {
-    return res.status(400).send("You are already a member of this event");
-  }
-
-  // Add user to event
-  await db.query(
-    "INSERT INTO event_members (event_id, user_id) VALUES ($1,$2)",
-    [eventResult.rows[0].id, req.user.id]
-  );
-
-  res.redirect("/dashboard");
 }
 
 const handleViewEvent = async (req, res) => {
@@ -111,7 +125,6 @@ const handleViewEvent = async (req, res) => {
       [eventID]
     );
 
-    // per member spending
     const memberSpendingResult = await db.query(
       `SELECT paid_by, SUM(amount) AS total
        FROM expenses
@@ -122,10 +135,9 @@ const handleViewEvent = async (req, res) => {
 
     const spendingMap = {};
     memberSpendingResult.rows.forEach(row => {
-      spendingMap[row.paid_by] = parseFloat(row.total) || 0;
+      spendingMap[parseInt(row.paid_by)] = parseFloat(row.total) || 0;
     });
 
-    // already settled payments FROM current user TO others in this event
     const settlementsResult = await db.query(
       `SELECT payee_id, SUM(amount) AS total
        FROM settlements
@@ -133,11 +145,17 @@ const handleViewEvent = async (req, res) => {
        GROUP BY payee_id`,
       [eventID, req.user.id]
     );
+
+    const settledMap = {};
+    settlementsResult.rows.forEach(row => {
+      settledMap[parseInt(row.payee_id)] = parseFloat(row.total) || 0;
+    });
+
     const settlementsReceivedResult = await db.query(
       `SELECT payee_id, SUM(amount) AS total
-   FROM settlements
-   WHERE event_id = $1 AND status = 'paid'
-   GROUP BY payee_id`,
+       FROM settlements
+       WHERE event_id = $1 AND status = 'paid'
+       GROUP BY payee_id`,
       [eventID]
     );
 
@@ -146,24 +164,17 @@ const handleViewEvent = async (req, res) => {
       settlementsReceivedMap[parseInt(row.payee_id)] = parseFloat(row.total) || 0;
     });
 
-    // settlements paid out by each member TO others in this event  
     const settlementsPaidResult = await db.query(
       `SELECT payer_id, SUM(amount) AS total
-   FROM settlements
-   WHERE event_id = $1 AND status = 'paid'
-   GROUP BY payer_id`,
+       FROM settlements
+       WHERE event_id = $1 AND status = 'paid'
+       GROUP BY payer_id`,
       [eventID]
     );
-
 
     const settlementsPaidMap = {};
     settlementsPaidResult.rows.forEach(row => {
       settlementsPaidMap[parseInt(row.payer_id)] = parseFloat(row.total) || 0;
-    });
-
-    const settledMap = {};
-    settlementsResult.rows.forEach(row => {
-      settledMap[row.payee_id] = parseFloat(row.total) || 0;
     });
 
     const totalExpenses = expensesResult.rows
@@ -172,6 +183,10 @@ const handleViewEvent = async (req, res) => {
     const memberCount = membersResult.rows.length;
     const fairShare = memberCount > 0 ? totalExpenses / memberCount : 0;
 
+    // what current user owes overall
+    const myPaid = spendingMap[parseInt(req.user.id)] || 0;
+    const myDebt = Math.max(0, fairShare - myPaid);
+
     const membersWithData = membersResult.rows.map(m => {
       const memberID = parseInt(m.id);
       const paid = spendingMap[memberID] || 0;
@@ -179,14 +194,15 @@ const handleViewEvent = async (req, res) => {
       const alreadySettled = settledMap[memberID] || 0;
       const settlementsReceived = settlementsReceivedMap[memberID] || 0;
       const settlementsPaid = settlementsPaidMap[memberID] || 0;
+      const netContribution = paid + settlementsReceived - settlementsPaid;
 
       let owedByMe = 0;
       if (memberID !== parseInt(req.user.id) && balance > 0.01) {
         owedByMe = Math.max(0, Math.min(myDebt, balance) - alreadySettled);
       }
 
-      // net contribution = expenses paid + settlements received - settlements paid out
-      const netContribution = paid + settlementsReceived - settlementsPaid;
+      const memberDebt = Math.max(0, fairShare - paid);
+      const isSettled = memberDebt < 0.01 || settlementsPaid >= memberDebt;
 
       return {
         ...m,
@@ -197,7 +213,7 @@ const handleViewEvent = async (req, res) => {
         balance,
         owedByMe,
         alreadySettled,
-        isSettled: Math.max(0, fairShare - paid) < 0.01 || settlementsPaid >= Math.max(0, fairShare - paid)
+        isSettled
       };
     });
 
@@ -215,6 +231,5 @@ const handleViewEvent = async (req, res) => {
     res.status(500).send("Error loading event");
   }
 };
-
 
 export { handleCreateEvent, handleJoinEvent, handleViewEvent, handleDeleteEvent };
